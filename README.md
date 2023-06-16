@@ -1,1 +1,1 @@
-# -Develop-a-lightweight-MEC-platform-simulator-based-on-Minikube
+# Develop-a-lightweight-MEC-platform-simulator-based-on-Minikube
