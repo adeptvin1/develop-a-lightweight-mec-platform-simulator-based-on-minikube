@@ -101,6 +101,7 @@ async def update_kubernetes_deployment(namespace, deployment_name, replicas):
     print(f"Deployment '{deployment_name}' updated successfully.")
 
 async def app_deployment(zone, users):
+    # TODO: refactor it
     if users >= 1:
         replicas = 1
     if users >= 2:
@@ -113,6 +114,7 @@ async def main():
     config.load_kube_config()
     time_data_collect = 1
     list_zone = ["zone01", "zone02", "zone03", "zone04"]
+    # TODO: Add check on existing deployments
     for zone in list_zone:
         await initiate_deployment(zone)
 
@@ -121,7 +123,7 @@ async def main():
         data = dict()
         count_of_ue = dict()
         for zone in list_zone:
-            rawdata[zone] = await rest_api(0.5, zone)
+            rawdata[zone] = await rest_api(10, zone)
             
             data[zone] = json.loads(json.dumps(rawdata[zone]))
 
