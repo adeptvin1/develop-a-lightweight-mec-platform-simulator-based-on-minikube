@@ -19,8 +19,7 @@
 
 ## 3. Installation
 
-
-`minikube start --nodes 4 --extra-config kubeadm.node-name=mec-node-zone` 
+`minikube start --nodes 4 -p mec-node` 
 
 
 ## 4. Authors
