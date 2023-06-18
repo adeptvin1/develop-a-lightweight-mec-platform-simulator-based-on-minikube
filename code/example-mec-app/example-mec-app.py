@@ -19,7 +19,7 @@ async def log_connection(mode, data):
 async def rest_api(delay, zone):
     api_id = "sbxfgqbt9g"
     api_url = "https://try-mec.etsi.org/" + api_id + "/mep1/location/v2/queries/zones/" + zone
-    print(api_url)
+    print("Get info from " + api_url)
     response = requests.get(api_url)
     if response:
         await asyncio.sleep(delay)
@@ -81,8 +81,8 @@ async def deploy_kubernetes_deployment(namespace, deployment_name, image, replic
 
     print(f"Deployment '{deployment_name}' created successfully.")
 
-async def initiate_deployment(zone):
-    await deploy_kubernetes_deployment("default", "test-app-" + zone, "nginx", 0, zone)
+async def initiate_deployment(deployment_name, namespace, image, zone):
+    await deploy_kubernetes_deployment(namespace, deployment_name, image, 0, zone)
 
 async def update_kubernetes_deployment(namespace, deployment_name, replicas):
 
@@ -98,15 +98,34 @@ async def update_kubernetes_deployment(namespace, deployment_name, replicas):
     # Patch the deployment
     api_client.patch_namespaced_deployment(deployment_name, namespace, deployment)
 
-    print(f"Deployment '{deployment_name}' updated successfully.")
+    print(f"Deployment '{deployment_name}' updated successfully. Count of replicas is '{replicas}'")
 
-async def app_deployment(zone, users):
+
+
+async def check_deployment_exists(deployment_name, namespace):
+    api_instance = client.AppsV1Api()
+
+    try:
+        # Retrieve the deployment by name
+        api_response = api_instance.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+        
+        if api_response:
+            return True
+        else:
+            return False
+            
+    except Exception as e:
+        return False
+
+async def app_deployment(namespace, deployment_name, users):
     # TODO: refactor it
-    if users >= 1:
+    if users == 1:
         replicas = 1
-    if users >= 2:
+    if users == 2:
         replicas = 2
-    await update_kubernetes_deployment("default", "test-app-" + zone, replicas)
+    if users >= 3:
+        replicas = 3
+    await update_kubernetes_deployment(namespace, deployment_name, replicas)
 
 
 async def main():
@@ -114,26 +133,34 @@ async def main():
     config.load_kube_config()
     time_data_collect = 1
     list_zone = ["zone01", "zone02", "zone03", "zone04"]
+    deployment_name = "test-mec-app-"
+    namespace = "default"
+    image = "nginx"
+    request_delay = 1
     # TODO: Add check on existing deployments
     for zone in list_zone:
-        await initiate_deployment(zone)
+        if await check_deployment_exists(deployment_name + zone, namespace):
+            print(f"Deployment '{deployment_name + zone}' is exist.")
+            pass
+        else:
+            await initiate_deployment(deployment_name + zone , namespace, image, zone)
 
     while time_data_collect == 1:
         rawdata = dict()
         data = dict()
         count_of_ue = dict()
         for zone in list_zone:
-            rawdata[zone] = await rest_api(10, zone)
+            rawdata[zone] = await rest_api(request_delay, zone)
             
             data[zone] = json.loads(json.dumps(rawdata[zone]))
 
         for zone in data:
             count_of_ue[zone] = data[zone]["zoneInfo"]["numberOfUsers"]
-            print(count_of_ue[zone])
+            print( zone + " have " + str(count_of_ue[zone]) + " UE")
 
         for k in count_of_ue:
-            if count_of_ue[k] > 1:
-                await app_deployment(k, count_of_ue[k])
+            if count_of_ue[k] >= 1:
+                await app_deployment(namespace, deployment_name + k, count_of_ue[k])
             else:
                 pass
         
