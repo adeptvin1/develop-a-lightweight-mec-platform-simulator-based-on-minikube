@@ -14,3 +14,7 @@ jobs:
           source: "code/example-mec-app"
           mypy-options: "--ignore-missing-imports --show-error-codes"
           isort-options: "-w 100"
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
